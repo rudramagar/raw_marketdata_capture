@@ -33,6 +33,9 @@ private:
     std::string         output_path;
     int                 output_fd = -1;
     std::atomic<bool>   running{false};
+    std::atomic<uint64_t>    total_received{0};
+    std::atomic<uint64_t>    total_dropped{0};
+    std::atomic<uint64_t>    total_written{0};
 };
 
 #endif

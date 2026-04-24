@@ -69,11 +69,22 @@ void Capture::network_loop() {
     }
 
     uint8_t recv_buffer[MAX_PACKET_SIZE];
-    uint64_t total_received = 0;
-    uint64_t total_dropped = 0;
+    time_t last_log_time = ::time(nullptr);
 
     while (running) {
         int ready = ::poll(poll_fds, socket_count, 100);
+
+        // syslog
+        time_t now = ::time(nullptr);
+        if (now != last_log_time) {
+            syslog(LOG_INFO, "received=%llu dropped=%llu written=%llu",
+                    (unsigned long long)total_received.load(),
+                    (unsigned long long)total_dropped.load(),
+                    (unsigned long long)total_written.load());
+
+            last_log_time = now;
+        }
+
         if (ready <= 0) {
             continue;
         }
@@ -96,10 +107,6 @@ void Capture::network_loop() {
         }
     }
 
-    syslog(LOG_INFO, "network: received=%llu dropped=%llu",
-            (unsigned long long)total_received,
-            (unsigned long long)total_dropped);
-
     if (total_dropped > 0) {
         syslog(LOG_WARNING, "dropped %llu packets (queue full)",
                 (unsigned long long)total_dropped);
@@ -107,8 +114,6 @@ void Capture::network_loop() {
 }
 
 void Capture::writer_loop() {
-
-    uint64_t total_written = 0;
 
     while (running || packet_queue.size() > 0) {
         const Slot* slot = packet_queue.pop();
@@ -128,8 +133,6 @@ void Capture::writer_loop() {
 
         total_written++;
     }
-
-    syslog(LOG_INFO, "written %llu packets", (unsigned long long)total_written);
 }
 
 
