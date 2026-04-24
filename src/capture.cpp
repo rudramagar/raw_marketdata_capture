@@ -70,6 +70,7 @@ void Capture::network_loop() {
 
     uint8_t recv_buffer[MAX_PACKET_SIZE];
     time_t last_log_time = ::time(nullptr);
+    uint64_t last_log_received = 0;
 
     while (running) {
         int ready = ::poll(poll_fds, socket_count, 100);
@@ -77,10 +78,14 @@ void Capture::network_loop() {
         // syslog
         time_t now = ::time(nullptr);
         if (now != last_log_time) {
-            syslog(LOG_INFO, "received=%llu dropped=%llu written=%llu",
-                    (unsigned long long)total_received.load(),
-                    (unsigned long long)total_dropped.load(),
-                    (unsigned long long)total_written.load());
+            uint64_t current_received = total_received.load();
+            if (current_received != last_log_received) {
+                syslog(LOG_INFO, "received=%llu dropped=%llu written=%llu",
+                        (unsigned long long)total_received.load(),
+                        (unsigned long long)total_dropped.load(),
+                        (unsigned long long)total_written.load());
+                last_log_received = current_received;
+            }
 
             last_log_time = now;
         }
