@@ -99,6 +99,16 @@ void Capture::network_loop() {
                 continue;
             }
 
+            // MoldUDP64 message count
+            // at bytes 18-19 (big-endian)
+            uint16_t msg_count = (recv_buffer[18] << 8) | recv_buffer[19];
+
+            // Skip heartbeats
+            // message_count == 0
+            if (msg_count == 0) {
+                continue;
+            }
+
             if (!packet_queue.push(recv_buffer, bytes)) {
                 total_dropped++;
             }
